@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ascended Kingdom – Player Wiki</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Press+Start+2P&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy:    #151929;
+    --navy2:   #1e2440;
+    --navy3:   #252d4a;
+    --coral:   #f4845f;
+    --amber:   #f0b429;
+    --sky:     #7ec8e3;
+    --skysoft: #a8d8ea;
+    --purple:  #7b6baa;
+    --cloud:   #f0f4ff;
+    --text:    #cdd5f0;
+    --textdim: #7a85a8;
+    --border:  rgba(126,200,227,0.15);
+    --glow:    rgba(126,200,227,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Sky canvas background ── */
+  #sky-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Layout ── */
+  #app { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(180deg, rgba(21,25,41,0.98) 0%, rgba(21,25,41,0.85) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+  }
+
+  .logo-castle {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .logo-name {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    background: linear-gradient(90deg, var(--amber), var(--coral), var(--sky));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  .logo-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--textdim);
+    margin-top: 2px;
+  }
+
+  /* ── Search ── */
+  .search-wrap {
+    position: relative;
+    width: 280px;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: var(--navy3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px 8px 36px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-wrap input::placeholder { color: var(--textdim); }
+  .search-wrap input:focus {
+    border-color: rgba(126,200,227,0.4);
+    box-shadow: 0 0 0 3px rgba(126,200,227,0.08);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--textdim);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  #search-results {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: var(--navy2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 200;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .sr-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .sr-item:last-child { border-bottom: none; }
+  .sr-item:hover { background: var(--navy3); }
+  .sr-item-title { font-size: 13px; font-weight: 600; color: var(--sky); }
+  .sr-item-ctx { font-size: 11px; color: var(--textdim); margin-top: 2px; }
+  .sr-none { padding: 16px; text-align: center; font-size: 13px; color: var(--textdim); }
+
+  /* ── Body layout ── */
+  .body-wrap {
+    display: flex;
+    flex: 1;
+  }
+
+  /* ── Sidebar ── */
+  nav#sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: rgba(21,25,41,0.7);
+    border-right: 1px solid var(--border);
+    padding: 20px 0 40px;
+    position: sticky;
+    top: 68px;
+    height: calc(100vh - 68px);
+    overflow-y: auto;
+    backdrop-filter: blur(8px);
+  }
+
+  nav#sidebar::-webkit-scrollbar { width: 4px; }
+  nav#sidebar::-webkit-scrollbar-track { background: transparent; }
+  nav#sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .nav-section { margin-bottom: 6px; }
+
+  .nav-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    cursor: pointer;
+    user-select: none;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    transition: color 0.2s;
+    border-radius: 0;
+  }
+
+  .nav-section-header:hover { color: var(--coral); }
+
+  .nav-chevron {
+    transition: transform 0.25s;
+    font-size: 10px;
+    color: var(--textdim);
+  }
+  .nav-section.open .nav-chevron { transform: rotate(90deg); }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    padding-bottom: 4px;
+  }
+  .nav-section.open .nav-links { display: flex; }
+
+  .nav-link {
+    padding: 7px 20px 7px 32px;
+    font-size: 12.5px;
+    color: var(--textdim);
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s, background 0.2s;
+    border-left: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .nav-link:hover { color: var(--sky); background: var(--glow); }
+  .nav-link.active {
+    color: var(--sky);
+    border-left-color: var(--sky);
+    background: rgba(126,200,227,0.06);
+  }
+
+  .nav-link .cmd-badge {
+    font-family: 'Inter', monospace;
+    font-size: 10px;
+    background: rgba(126,200,227,0.1);
+    color: var(--skysoft);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* ── Main content ── */
+  main {
+    flex: 1;
+    padding: 40px 48px 80px;
+    max-width: 880px;
+  }
+
+  /* ── Sections ── */
+  .wiki-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .wiki-section.active { display: block; }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Section hero ── */
+  .section-hero {
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--coral);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    background: linear-gradient(135deg, var(--cloud) 0%, var(--sky) 60%, var(--skysoft) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .section-desc {
+    font-size: 14.5px;
+    color: var(--textdim);
+    line-height: 1.7;
+    max-width: 640px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: rgba(37,45,74,0.5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    border-color: rgba(126,200,227,0.3);
+    box-shadow: 0 4px 24px rgba(126,200,227,0.06);
+  }
+
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cloud);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-title .icon { font-size: 18px; }
+
+  .card p {
+    font-size: 13.5px;
+    color: var(--textdim);
+    line-height: 1.7;
+  }
+
+  /* ── Command table ── */
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 13px;
+  }
+
+  .cmd-table th {
+    text-align: left;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--amber);
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cmd-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(126,200,227,0.06);
+    vertical-align: top;
+  }
+
+  .cmd-table tr:last-child td { border-bottom: none; }
+  .cmd-table tr:hover td { background: var(--glow); }
+
+  code, .cmd {
+    font-family: 'Inter', monospace;
+    font-size: 12px;
+    background: rgba(126,200,227,0.1);
+    color: var(--skysoft);
+    padding: 2px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  .cmd-table td:first-child code { color: var(--coral); background: rgba(244,132,95,0.1); }
+
+  /* ── Tip / info boxes ── */
+  .tip {
+    background: rgba(126,200,227,0.06);
+    border-left: 3px solid var(--sky);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+  }
+  .tip strong { color: var(--sky); }
+
+  .warn {
+    background: rgba(240,180,41,0.07);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.65;
+  }
+  .warn strong { color: var(--amber); }
+
+  /* ── Sub-heading ── */
+  h2.sub {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    margin: 28px 0 12px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2.sub::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  h3.subsub {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sky);
+    margin: 20px 0 8px;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Skill grid (mcmmo) ── */
+  .skill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+
+  .skill-card {
+    background: rgba(37,45,74,0.5);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .skill-card:hover { border-color: rgba(244,132,95,0.4); transform: translateY(-2px); }
+
+  .skill-card .sk-icon { font-size: 22px; margin-bottom: 8px; }
+  .skill-card .sk-name {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cloud);
+    margin-bottom: 4px;
+  }
+  .skill-card .sk-desc { font-size: 11.5px; color: var(--textdim); line-height: 1.5; }
+
+  /* ── Pixel divider ── */
+  .pixel-divider {
+    margin: 32px 0;
+    height: 4px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--coral) 0px, var(--coral) 6px,
+      transparent 6px, transparent 10px,
+      var(--amber) 10px, var(--amber) 16px,
+      transparent 16px, transparent 20px,
+      var(--sky) 20px, var(--sky) 26px,
+      transparent 26px, transparent 30px
+    );
+    border-radius: 2px;
+    opacity: 0.45;
+  }
+
+  /* ── Home / landing ── */
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px;
+    margin-top: 28px;
+  }
+
+  .home-card {
+    background: rgba(37,45,74,0.5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    text-align: center;
+  }
+  .home-card:hover {
+    border-color: rgba(126,200,227,0.35);
+    box-shadow: 0 6px 28px rgba(126,200,227,0.08);
+    transform: translateY(-3px);
+  }
+  .home-card .hc-icon { font-size: 32px; margin-bottom: 10px; }
+  .home-card .hc-title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cloud);
+    margin-bottom: 6px;
+  }
+  .home-card .hc-desc { font-size: 11.5px; color: var(--textdim); line-height: 1.5; }
+
+  /* ── Mobile hamburger ── */
+  #menu-toggle {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  @media (max-width: 768px) {
+    #menu-toggle { display: block; }
+    nav#sidebar {
+      position: fixed;
+      top: 68px;
+      left: -260px;
+      height: calc(100vh - 68px);
+      z-index: 90;
+      transition: left 0.3s;
+    }
+    nav#sidebar.open { left: 0; }
+    main { padding: 24px 20px 60px; }
+    .search-wrap { width: 180px; }
+    .section-title { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="sky-canvas"></canvas>
+
+<div id="app">
+  <!-- ── Header ── -->
+  <header>
+    <a class="logo" href="#" onclick="showSection('home')">
+      <!-- Pixel castle SVG logo -->
+      <svg class="logo-castle" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- cloud -->
+        <ellipse cx="22" cy="32" rx="18" ry="9" fill="#a8d8ea" opacity="0.25"/>
+        <ellipse cx="14" cy="30" rx="10" ry="7" fill="#c8e8f4" opacity="0.3"/>
+        <ellipse cx="30" cy="31" rx="9" ry="6" fill="#c8e8f4" opacity="0.3"/>
+        <!-- castle walls pixel -->
+        <rect x="13" y="22" width="18" height="12" fill="#f0b429"/>
+        <!-- battlements -->
+        <rect x="13" y="19" width="3" height="4" fill="#f0b429"/>
+        <rect x="18" y="19" width="3" height="4" fill="#f0b429"/>
+        <rect x="23" y="19" width="3" height="4" fill="#f0b429"/>
+        <rect x="28" y="19" width="3" height="4" fill="#f0b429"/>
+        <!-- gate -->
+        <rect x="19" y="28" width="6" height="6" fill="#1a1f3a"/>
+        <!-- windows -->
+        <rect x="15" y="24" width="3" height="3" fill="#7ec8e3"/>
+        <rect x="26" y="24" width="3" height="3" fill="#7ec8e3"/>
+        <!-- tower left -->
+        <rect x="9" y="18" width="6" height="16" fill="#f4845f"/>
+        <rect x="9" y="15" width="2" height="4" fill="#f4845f"/>
+        <rect x="13" y="15" width="2" height="4" fill="#f4845f"/>
+        <!-- tower right -->
+        <rect x="29" y="18" width="6" height="16" fill="#f4845f"/>
+        <rect x="29" y="15" width="2" height="4" fill="#f4845f"/>
+        <rect x="33" y="15" width="2" height="4" fill="#f4845f"/>
+        <!-- flag -->
+        <rect x="21" y="10" width="1" height="10" fill="#cdd5f0"/>
+        <polygon points="22,10 27,13 22,16" fill="#f4845f"/>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-name">Ascended Kingdom</span>
+        <span class="logo-sub">Player Wiki</span>
+      </div>
+    </a>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="search-input" placeholder="Search commands, plugins…" autocomplete="off" />
+        <div id="search-results"></div>
+      </div>
+      <button id="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+    </div>
+  </header>
+
+  <div class="body-wrap">
+    <!-- ── Sidebar ── -->
+    <nav id="sidebar">
+
+      <div class="nav-section open" data-sec="start">
+        <div class="nav-section-header" onclick="toggleNav(this)">
+          Getting Started <span class="nav-chevron">▶</span>
+        </div>
+        <div class="nav-links">
+          <a class="nav-link active" onclick="showSection('home')">🏰 Home</a>
+          <a class="nav-link" onclick="showSection('basics')">⚙️ Server Basics</a>
+        </div>
+      </div>
+
+      <div class="nav-section open" data-sec="towny">
+        <div class="nav-section-header" onclick="toggleNav(this)">
+          Towny <span class="nav-chevron">▶</span>
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" onclick="showSection('towny-overview')">📜 Overview</a>
+          <a class="nav-link" onclick="showSection('towny-towns')">🏙️ Towns</a>
+          <a class="nav-link" onclick="showSection('towny-nations')">⚔️ Nations</a>
+          <a class="nav-link" onclick="showSection('towny-plots')">🗺️ Plots & Permissions</a>
+        </div>
+      </div>
+
+      <div class="nav-section open" data-sec="mcmmo">
+        <div class="nav-section-header" onclick="toggleNav(this)">
+          mcMMO <span class="nav-chevron">▶</span>
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" onclick="showSection('mcmmo-overview')">⚔️ Overview</a>
+          <a class="nav-link" onclick="showSection('mcmmo-skills')">📊 Skills</a>
+          <a class="nav-link" onclick="showSection('mcmmo-parties')">👥 Parties</a>
+        </div>
+      </div>
+
+      <div class="nav-section open" data-sec="economy">
+        <div class="nav-section-header" onclick="toggleNav(this)">
+          Economy <span class="nav-chevron">▶</span>
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" onclick="showSection('economy-basics')">💰 Money & Basics</a>
+          <a class="nav-link" onclick="showSection('ezauctions')">🔨 EzAuctions</a>
+          <a class="nav-link" onclick="showSection('ezshops')">🏪 EzShops</a>
+          <a class="nav-link" onclick="showSection('playerauctions')">🤝 Player Auctions</a>
+        </div>
+      </div>
+
+      <div class="nav-section open" data-sec="qol">
+        <div class="nav-section-header" onclick="toggleNav(this)">
+          Quality of Life <span class="nav-chevron">▶</span>
+        </div>
+        <div class="nav-links">
+          <a class="nav-link" onclick="showSection('gravesx')">⚰️ GravesX</a>
+          <a class="nav-link" onclick="showSection('minepacks')">🎒 Minepacks</a>
+          <a class="nav-link" onclick="showSection('betterrtp')">🌍 Better RTP</a>
+          <a class="nav-link" onclick="showSection('silkspawners')">📦 Silk Spawners</a>
+          <a class="nav-link" onclick="showSection('rosestacker')">🌿 Rose Stacker</a>
+          <a class="nav-link" onclick="showSection('skoice')">🎙️ Skoice</a>
+        </div>
+      </div>
+
+    </nav>
+
+    <!-- ── Main ── -->
+    <main>
+
+      <!-- HOME -->
+      <div id="sec-home" class="wiki-section active">
+        <div class="section-hero">
+          <div class="section-eyebrow">Welcome to</div>
+          <div class="section-title">Ascended Kingdom</div>
+          <p class="section-desc">Your complete guide to everything on the server. Find info on towns, skills, shops, and more. Use the sidebar or search to jump to any topic.</p>
+        </div>
+        <div class="home-grid">
+          <div class="home-card" onclick="showSection('towny-overview')">
+            <div class="hc-icon">🏙️</div>
+            <div class="hc-title">Towny</div>
+            <div class="hc-desc">Build towns, join nations, and claim land with your friends.</div>
+          </div>
+          <div class="home-card" onclick="showSection('mcmmo-overview')">
+            <div class="hc-icon">⚔️</div>
+            <div class="hc-title">mcMMO</div>
+            <div class="hc-desc">Level up skills, unlock abilities, and grow stronger over time.</div>
+          </div>
+          <div class="home-card" onclick="showSection('economy-basics')">
+            <div class="hc-icon">💰</div>
+            <div class="hc-title">Economy</div>
+            <div class="hc-desc">Earn money, run shops, and trade with other players.</div>
+          </div>
+          <div class="home-card" onclick="showSection('ezauctions')">
+            <div class="hc-icon">🔨</div>
+            <div class="hc-title">Auctions</div>
+            <div class="hc-desc">Bid on items in real-time server-wide auctions.</div>
+          </div>
+          <div class="home-card" onclick="showSection('gravesx')">
+            <div class="hc-icon">⚰️</div>
+            <div class="hc-title">Graves</div>
+            <div class="hc-desc">Don't lose your items on death — find your grave and recover them.</div>
+          </div>
+          <div class="home-card" onclick="showSection('minepacks')">
+            <div class="hc-icon">🎒</div>
+            <div class="hc-title">Backpack</div>
+            <div class="hc-desc">Carry extra inventory with your personal backpack.</div>
+          </div>
+          <div class="home-card" onclick="showSection('betterrtp')">
+            <div class="hc-icon">🌍</div>
+            <div class="hc-title">Random TP</div>
+            <div class="hc-desc">Teleport to a random safe location to explore the world.</div>
+          </div>
+          <div class="home-card" onclick="showSection('skoice')">
+            <div class="hc-icon">🎙️</div>
+            <div class="hc-title">Skoice</div>
+            <div class="hc-desc">Proximity voice chat — talk to nearby players in-game.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BASICS -->
+      <div id="sec-basics" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Getting Started</div>
+          <div class="section-title">Server Basics</div>
+          <p class="section-desc">Essential commands every player should know. These cover homes, chat, teleporting, and earning money from mobs.</p>
+        </div>
+
+        <h2 class="sub">Homes & Teleportation</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/sethome [name]</code></td><td>Save your current location as a named home. You can have multiple homes.</td></tr>
+          <tr><td><code>/home [name]</code></td><td>Teleport to one of your saved homes.</td></tr>
+          <tr><td><code>/delhome [name]</code></td><td>Delete a saved home.</td></tr>
+          <tr><td><code>/homes</code></td><td>List all of your set homes.</td></tr>
+          <tr><td><code>/spawn</code></td><td>Teleport back to the server spawn.</td></tr>
+          <tr><td><code>/tpa [player]</code></td><td>Request to teleport to another player.</td></tr>
+          <tr><td><code>/tpahere [player]</code></td><td>Request another player teleport to you.</td></tr>
+          <tr><td><code>/tpaccept</code></td><td>Accept an incoming teleport request.</td></tr>
+          <tr><td><code>/tpdeny</code></td><td>Deny an incoming teleport request.</td></tr>
+          <tr><td><code>/rtp</code></td><td>Randomly teleport to a safe location in the world. See the <a href="#" onclick="showSection('betterrtp')" style="color:var(--sky)">Better RTP</a> page for more details.</td></tr>
+        </table>
+
+        <h2 class="sub">Player Info</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/balance</code></td><td>Check your current in-game balance.</td></tr>
+          <tr><td><code>/pay [player] [amount]</code></td><td>Send money to another player.</td></tr>
+          <tr><td><code>/msg [player] [message]</code></td><td>Send a private message to a player.</td></tr>
+          <tr><td><code>/r [message]</code></td><td>Reply to the last private message you received.</td></tr>
+          <tr><td><code>/ignore [player]</code></td><td>Block messages from a specific player.</td></tr>
+          <tr><td><code>/seen [player]</code></td><td>Check when a player was last online.</td></tr>
+          <tr><td><code>/afk</code></td><td>Mark yourself as away from keyboard.</td></tr>
+          <tr><td><code>/nick [name]</code></td><td>Set a display nickname (if permitted).</td></tr>
+          <tr><td><code>/bp</code></td><td>Open your personal backpack. See the <a href="#" onclick="showSection('minepacks')" style="color:var(--sky)">Minepacks</a> page for details.</td></tr>
+        </table>
+
+        <h2 class="sub">Money From Mobs</h2>
+        <div class="card">
+          <div class="card-title"><span class="icon">🪙</span> Earning Money by Fighting</div>
+          <p>Killing mobs automatically rewards you with in-game currency. Different mobs pay out different amounts — tougher mobs like Blazes, Withers, and Elder Guardians earn significantly more than basic overworld mobs. Keep an eye on the chat after a kill to see your payout.</p>
+        </div>
+        <div class="tip"><strong>Tip:</strong> Pair mob grinding with mcMMO's Combat skills to double-dip on EXP and money gains at the same time.</div>
+      </div>
+
+      <!-- TOWNY OVERVIEW -->
+      <div id="sec-towny-overview" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Plugin Guide</div>
+          <div class="section-title">Towny</div>
+          <p class="section-desc">Towny lets players form towns, buy and sell land plots, create governments, and band together into nations. It's the foundation of community life on Ascended Kingdom.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">📜</span> How It Works</div>
+          <p>The world is divided into chunks. Towns claim chunks as plots, and residents can be granted access to those plots. Towns need an active Mayor, regular upkeep payments, and enough residents to grow into a thriving nation.</p>
+        </div>
+        <div class="tip"><strong>New player tip:</strong> You can join an existing town for free using <code>/t join [townname]</code> if the town has open registration, or ask a Mayor to invite you with <code>/t add [yourname]</code>.</div>
+        <h2 class="sub">Basic Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/t</code></td><td>View info about your current town.</td></tr>
+          <tr><td><code>/t [name]</code></td><td>View info about any town by name.</td></tr>
+          <tr><td><code>/t list</code></td><td>List all towns on the server.</td></tr>
+          <tr><td><code>/t join [town]</code></td><td>Join a town with open registration.</td></tr>
+          <tr><td><code>/t leave</code></td><td>Leave your current town.</td></tr>
+          <tr><td><code>/t spawn [town]</code></td><td>Teleport to a town's spawn point.</td></tr>
+          <tr><td><code>/t map</code></td><td>Show a text map of claimed chunks near you.</td></tr>
+          <tr><td><code>/resident</code> or <code>/res</code></td><td>View your own resident info and town membership.</td></tr>
+        </table>
+      </div>
+
+      <!-- TOWNY TOWNS -->
+      <div id="sec-towny-towns" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Towny</div>
+          <div class="section-title">Creating & Managing Towns</div>
+          <p class="section-desc">Ready to lead? Any player can found a town — it costs money to create and requires ongoing upkeep to keep your claims active.</p>
+        </div>
+        <h2 class="sub">Founding a Town</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/t new [name]</code></td><td>Found a new town at your current location. Costs money.</td></tr>
+          <tr><td><code>/t claim</code></td><td>Claim the chunk you're standing in as town land.</td></tr>
+          <tr><td><code>/t unclaim</code></td><td>Unclaim a chunk from your town.</td></tr>
+          <tr><td><code>/t add [player]</code></td><td>Invite a player to your town (Mayor only).</td></tr>
+          <tr><td><code>/t kick [player]</code></td><td>Remove a resident from your town.</td></tr>
+          <tr><td><code>/t rank add [player] [rank]</code></td><td>Assign a rank (e.g. assistant, builder) to a resident.</td></tr>
+          <tr><td><code>/t spawn set</code></td><td>Set the town's teleport spawn point.</td></tr>
+          <tr><td><code>/t deposit [amount]</code></td><td>Deposit money into the town bank for upkeep.</td></tr>
+          <tr><td><code>/t withdraw [amount]</code></td><td>Withdraw money from the town bank (Mayor only).</td></tr>
+          <tr><td><code>/t delete</code></td><td>Permanently delete your town.</td></tr>
+        </table>
+        <div class="warn"><strong>⚠️ Upkeep:</strong> Towns are charged a daily upkeep fee from the town bank. If the bank runs dry, the town will fall and its claims will be released. Keep your bank funded!</div>
+        <h2 class="sub">Town Settings</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/t toggle open</code></td><td>Allow anyone to join without an invite.</td></tr>
+          <tr><td><code>/t toggle pvp</code></td><td>Toggle PvP within town borders.</td></tr>
+          <tr><td><code>/t toggle explosion</code></td><td>Toggle explosion damage within town borders.</td></tr>
+          <tr><td><code>/t toggle fire</code></td><td>Toggle fire spread within town borders.</td></tr>
+          <tr><td><code>/t toggle mobs</code></td><td>Toggle hostile mob spawning in town.</td></tr>
+        </table>
+      </div>
+
+      <!-- TOWNY NATIONS -->
+      <div id="sec-towny-nations" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Towny</div>
+          <div class="section-title">Nations</div>
+          <p class="section-desc">Once your town is established, you can form or join a Nation — a collection of allied towns under one banner with a King and shared bonuses.</p>
+        </div>
+        <h2 class="sub">Nation Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/n new [name]</code></td><td>Found a new nation (requires an established town).</td></tr>
+          <tr><td><code>/n [name]</code></td><td>View info about a nation.</td></tr>
+          <tr><td><code>/n list</code></td><td>List all nations on the server.</td></tr>
+          <tr><td><code>/n add [town]</code></td><td>Invite a town to join your nation (King only).</td></tr>
+          <tr><td><code>/n kick [town]</code></td><td>Remove a town from the nation.</td></tr>
+          <tr><td><code>/n ally add [nation]</code></td><td>Send an alliance request to another nation.</td></tr>
+          <tr><td><code>/n enemy add [nation]</code></td><td>Declare another nation as an enemy.</td></tr>
+          <tr><td><code>/n spawn</code></td><td>Teleport to the nation capital spawn.</td></tr>
+          <tr><td><code>/n deposit [amount]</code></td><td>Deposit into the nation bank.</td></tr>
+          <tr><td><code>/n withdraw [amount]</code></td><td>Withdraw from the nation bank (King only).</td></tr>
+        </table>
+        <div class="tip"><strong>Alliances:</strong> Allied nations can freely use each other's town spawns and may have shared permissions depending on server config. Being at war with an enemy nation may enable PvP between members.</div>
+      </div>
+
+      <!-- TOWNY PLOTS -->
+      <div id="sec-towny-plots" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Towny</div>
+          <div class="section-title">Plots & Permissions</div>
+          <p class="section-desc">Plots are individual chunks within a town. Mayors can sell, assign, or restrict plots — and players can customize who can do what on their own plots.</p>
+        </div>
+        <h2 class="sub">Plot Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/plot claim</code></td><td>Claim an available plot you're standing in (costs money if for sale).</td></tr>
+          <tr><td><code>/plot unclaim</code></td><td>Release a plot you own back to the town.</td></tr>
+          <tr><td><code>/plot forsale [price]</code></td><td>Put your plot up for sale at a set price.</td></tr>
+          <tr><td><code>/plot notforsale</code></td><td>Remove your plot from sale.</td></tr>
+          <tr><td><code>/plot set name [name]</code></td><td>Give your plot a custom name.</td></tr>
+          <tr><td><code>/plot set perm [on/off]</code></td><td>Toggle build/destroy/switch/item permissions on your plot for outsiders, residents, or allies.</td></tr>
+          <tr><td><code>/plot toggle pvp</code></td><td>Toggle PvP on your specific plot.</td></tr>
+        </table>
+        <div class="tip"><strong>Plot types</strong> include standard, shop, arena, embassy, and more. Mayors can set a plot's type with <code>/plot set [type]</code> to unlock special behaviors for that chunk.</div>
+      </div>
+
+      <!-- MCMMO OVERVIEW -->
+      <div id="sec-mcmmo-overview" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Plugin Guide</div>
+          <div class="section-title">mcMMO</div>
+          <p class="section-desc">mcMMO adds an RPG-style leveling system to Minecraft. Every action you take in-game — mining, fighting, fishing, farming — earns XP in a related skill, which unlocks passive bonuses and active abilities.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">📈</span> Leveling Up</div>
+          <p>XP is earned automatically as you play. There's no special setup needed — just do what you normally do. As your skill levels rise, you'll unlock better passive bonuses and more powerful active abilities.</p>
+        </div>
+        <h2 class="sub">Key Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/mcstats</code></td><td>View all your skill levels at a glance.</td></tr>
+          <tr><td><code>/[skillname]</code></td><td>View detailed info about a specific skill (e.g. <code>/mining</code>, <code>/swords</code>).</td></tr>
+          <tr><td><code>/mctop</code></td><td>View the server leaderboard for total mcMMO power level.</td></tr>
+          <tr><td><code>/mctop [skill]</code></td><td>View the leaderboard for a specific skill.</td></tr>
+          <tr><td><code>/mcrank</code></td><td>See your own ranking on the server leaderboards.</td></tr>
+          <tr><td><code>/party create [name]</code></td><td>Create an mcMMO party to share XP and abilities with friends.</td></tr>
+        </table>
+        <div class="tip"><strong>Active abilities:</strong> Most combat and gathering skills have an activatable ability. Hold the relevant tool and right-click to ready the ability, then use it on the target.</div>
+      </div>
+
+      <!-- MCMMO SKILLS -->
+      <div id="sec-mcmmo-skills" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">mcMMO</div>
+          <div class="section-title">Skills Reference</div>
+          <p class="section-desc">There are two categories of skills: Combat (leveled through fighting) and Gathering/Misc (leveled through everyday activities). Click any skill to learn more.</p>
+        </div>
+        <h2 class="sub">Combat Skills</h2>
+        <div class="skill-grid">
+          <div class="skill-card">
+            <div class="sk-icon">🗡️</div>
+            <div class="sk-name">Swords</div>
+            <div class="sk-desc">Bleed, counter attack, and serrated strikes. Best for PvP and mob combat.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🪓</div>
+            <div class="sk-name">Axes</div>
+            <div class="sk-desc">Skull splitter ability, armor impact, and critical strikes. Great for hitting hard.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">✊</div>
+            <div class="sk-name">Unarmed</div>
+            <div class="sk-desc">Disarm opponents, arrow deflection, and iron arm style. Fight with your fists.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🏹</div>
+            <div class="sk-name">Archery</div>
+            <div class="sk-desc">Skill shot damage bonus, daze, and retrieve arrows. Deadly at range.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🛡️</div>
+            <div class="sk-name">Taming</div>
+            <div class="sk-desc">Buff your wolves with extra damage, thicker coats, and gore. Pets become powerhouses.</div>
+          </div>
+        </div>
+        <h2 class="sub">Gathering & Misc Skills</h2>
+        <div class="skill-grid">
+          <div class="skill-card">
+            <div class="sk-icon">⛏️</div>
+            <div class="sk-name">Mining</div>
+            <div class="sk-desc">Super breaker, double drops, and blast mining. Mine more in less time.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🌲</div>
+            <div class="sk-name">Woodcutting</div>
+            <div class="sk-desc">Tree feller ability, leaf blower, and double log drops. Chop whole trees instantly.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🌾</div>
+            <div class="sk-name">Herbalism</div>
+            <div class="sk-desc">Double drops from crops, green thumb, and green terra. Supercharge your farm.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🎣</div>
+            <div class="sk-name">Fishing</div>
+            <div class="sk-desc">Shake mobs for loot, magic hunter for enchanted drops, master angler.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🔨</div>
+            <div class="sk-name">Repair</div>
+            <div class="sk-desc">Repair tools and armor on anvils using the same material. Save your best gear.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🧱</div>
+            <div class="sk-name">Excavation</div>
+            <div class="sk-desc">Giga drill breaker and treasure hunting from digging. Find rare loot underground.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🔧</div>
+            <div class="sk-name">Salvage</div>
+            <div class="sk-desc">Break down tools and armor into raw materials. Recover resources from old gear.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">⚗️</div>
+            <div class="sk-name">Alchemy</div>
+            <div class="sk-desc">Brew more potent potions and unlock unique concoctions via cauldron.</div>
+          </div>
+          <div class="skill-card">
+            <div class="sk-icon">🔩</div>
+            <div class="sk-name">Acrobatics</div>
+            <div class="sk-desc">Dodge attacks and reduce fall damage. Leveled through parkour and combat.</div>
+          </div>
+        </div>
+        <div class="tip"><strong>Power Level:</strong> Your total power level is the sum of all your skill levels. Use <code>/mctop</code> to see how you rank against other players on the server.</div>
+      </div>
+
+      <!-- MCMMO PARTIES -->
+      <div id="sec-mcmmo-parties" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">mcMMO</div>
+          <div class="section-title">Parties</div>
+          <p class="section-desc">Parties let you group up with friends to share XP, see each other on the map, and use party-exclusive abilities together.</p>
+        </div>
+        <h2 class="sub">Party Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/party create [name]</code></td><td>Create a new party.</td></tr>
+          <tr><td><code>/party invite [player]</code></td><td>Invite a player to your party.</td></tr>
+          <tr><td><code>/party join [player]</code></td><td>Accept a party invite from a player.</td></tr>
+          <tr><td><code>/party quit</code></td><td>Leave your current party.</td></tr>
+          <tr><td><code>/party [info]</code></td><td>View your current party members and info.</td></tr>
+          <tr><td><code>/party lock</code></td><td>Lock the party so no one new can join.</td></tr>
+          <tr><td><code>/party xpshare [none/equal/split]</code></td><td>Set how XP is distributed among members.</td></tr>
+          <tr><td><code>/pc [message]</code></td><td>Send a message only to your party in chat.</td></tr>
+        </table>
+        <div class="tip"><strong>XP Share:</strong> When set to split mode, XP is divided among nearby party members. This is great for group grinding sessions!</div>
+      </div>
+
+      <!-- ECONOMY BASICS -->
+      <div id="sec-economy-basics" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Economy</div>
+          <div class="section-title">Money & Server Economy</div>
+          <p class="section-desc">Ascended Kingdom has a player-driven economy. Earn money by fighting mobs, selling items, and running shops — then spend it on land, gear, and more.</p>
+        </div>
+        <h2 class="sub">Earning Money</h2>
+        <div class="card">
+          <div class="card-title"><span class="icon">🪙</span> Money From Mobs</div>
+          <p>Kill mobs to earn automatic cash payouts. Harder mobs pay more. Bosses and nether/end mobs are especially lucrative.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🏪</span> Selling at Shops</div>
+          <p>Set up your own EzShop or sell items through PlayerAuctions and EzAuctions to earn money from other players.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🏙️</span> Towny Jobs</div>
+          <p>Mayors can pay residents from the town bank. Forming a productive town and contributing to it is another great income stream.</p>
+        </div>
+        <h2 class="sub">Money Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/balance</code> or <code>/bal</code></td><td>Check your current money.</td></tr>
+          <tr><td><code>/pay [player] [amount]</code></td><td>Send money directly to another player.</td></tr>
+          <tr><td><code>/baltop</code></td><td>See the richest players on the server.</td></tr>
+        </table>
+      </div>
+
+      <!-- EZAUCTIONS -->
+      <div id="sec-ezauctions" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Economy</div>
+          <div class="section-title">EzAuctions</div>
+          <p class="section-desc">EzAuctions lets you auction items to the entire server in real-time. Other players can bid and the highest bid when the timer runs out wins.</p>
+        </div>
+        <h2 class="sub">How to Auction</h2>
+        <div class="tip">Hold the item you want to auction in your hand before running the auction command.</div>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/auction start [price] [increment]</code></td><td>Start an auction for the item in your hand at a starting price.</td></tr>
+          <tr><td><code>/auction bid [amount]</code></td><td>Place a bid on the current auction.</td></tr>
+          <tr><td><code>/auction info</code></td><td>Show details about the item currently being auctioned.</td></tr>
+          <tr><td><code>/auction cancel</code></td><td>Cancel your active auction (if no bids have been placed).</td></tr>
+          <tr><td><code>/auction ignore</code></td><td>Mute auction announcements in chat.</td></tr>
+          <tr><td><code>/auction queue</code></td><td>View upcoming auctions in the queue.</td></tr>
+        </table>
+        <div class="warn"><strong>Note:</strong> Once a bid has been placed on your auction, you cannot cancel it. Make sure your starting price is right before you begin!</div>
+      </div>
+
+      <!-- EZSHOPS -->
+      <div id="sec-ezshops" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Economy</div>
+          <div class="section-title">EzShops</div>
+          <p class="section-desc">EzShops lets you create persistent player-owned shops where others can buy and sell items from you, even when you're offline.</p>
+        </div>
+        <h2 class="sub">Setting Up a Shop</h2>
+        <div class="card">
+          <div class="card-title"><span class="icon">1️⃣</span> Place a Chest</div>
+          <p>Place a chest where you want your shop to be. Stock it with whatever items you want to sell.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">2️⃣</span> Create the Shop Sign</div>
+          <p>Place a sign on the chest and write the shop details. EzShops will format it into a shop automatically.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">3️⃣</span> Open for Business</div>
+          <p>Other players can walk up to your shop, right-click the sign, and buy or sell items. You earn money even while offline.</p>
+        </div>
+        <h2 class="sub">Shop Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/shop list</code></td><td>Browse a list of all active player shops.</td></tr>
+          <tr><td><code>/shop find [item]</code></td><td>Search for a shop that sells a specific item.</td></tr>
+          <tr><td><code>/shop remove</code></td><td>Remove a shop by clicking its sign.</td></tr>
+        </table>
+        <div class="tip"><strong>Tip:</strong> Set up your shop inside your town for safety. Shops in unclaimed land can be griefed.</div>
+      </div>
+
+      <!-- PLAYER AUCTIONS -->
+      <div id="sec-playerauctions" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Economy</div>
+          <div class="section-title">Player Auctions</div>
+          <p class="section-desc">PlayerAuctions is a browse-anytime marketplace where players list items for sale at a fixed price or as an auction. Unlike EzAuctions, listings persist after the auctioneer logs off.</p>
+        </div>
+        <h2 class="sub">Using the Marketplace</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/ah</code></td><td>Open the auction house GUI to browse all active listings.</td></tr>
+          <tr><td><code>/ah sell [price]</code></td><td>List the item in your hand for sale at a fixed price.</td></tr>
+          <tr><td><code>/ah list</code></td><td>View your own active listings.</td></tr>
+          <tr><td><code>/ah cancel</code></td><td>Cancel one of your active listings and get the item back.</td></tr>
+          <tr><td><code>/ah expired</code></td><td>Collect items from expired or unsold listings.</td></tr>
+          <tr><td><code>/ah search [term]</code></td><td>Search the auction house for a specific item.</td></tr>
+        </table>
+        <div class="tip"><strong>Tip:</strong> Check <code>/ah</code> regularly for deals. Rare enchanted gear and hard-to-farm resources often appear here at competitive prices.</div>
+      </div>
+
+      <!-- GRAVESX -->
+      <div id="sec-gravesx" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">GravesX</div>
+          <p class="section-desc">When you die, GravesX spawns a grave at your location containing all your items. You won't lose your gear on death — as long as you can find your way back.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">⚰️</span> How Graves Work</div>
+          <p>On death, a grave block appears at your location. Your items are safely stored inside. When you return and right-click the grave, your items are returned to your inventory automatically.</p>
+        </div>
+        <h2 class="sub">Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/graves</code></td><td>View a list of all your active graves and their locations.</td></tr>
+          <tr><td><code>/graves teleport</code></td><td>Teleport directly to your most recent grave (if enabled on server).</td></tr>
+        </table>
+        <div class="warn"><strong>⚠️ Important:</strong> Graves do not last forever. After a set amount of time, the grave will break and drop the items on the ground. Retrieve your grave quickly after dying!</div>
+        <div class="tip"><strong>Tip:</strong> After dying in a dangerous area (nether, caves), prepare before going back — bring weapons, food, and armor so you don't die again reaching your grave.</div>
+      </div>
+
+      <!-- MINEPACKS -->
+      <div id="sec-minepacks" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">Minepacks</div>
+          <p class="section-desc">Minepacks gives every player a personal backpack — extra portable inventory you carry with you everywhere. Great for long mining trips or resource runs.</p>
+        </div>
+        <h2 class="sub">Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/bp</code></td><td>Open your personal backpack.</td></tr>
+          <tr><td><code>/backpack</code></td><td>Alias for <code>/bp</code>.</td></tr>
+        </table>
+        <div class="tip"><strong>Tip:</strong> Your backpack persists between sessions and is separate from your regular inventory. Use it to store overflow resources you don't want cluttering your hotbar.</div>
+        <div class="warn"><strong>Note:</strong> If you die, items in your backpack may or may not drop depending on server settings. Check with staff if you're unsure.</div>
+      </div>
+
+      <!-- BETTER RTP -->
+      <div id="sec-betterrtp" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">Better RTP</div>
+          <p class="section-desc">Better RTP (Random Teleport) sends you to a safe, random location in the world away from other players. Perfect for finding untouched land to settle or resources to gather.</p>
+        </div>
+        <h2 class="sub">Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/rtp</code></td><td>Teleport to a random safe location in the overworld.</td></tr>
+        </table>
+        <div class="tip"><strong>Tip:</strong> Use <code>/rtp</code> when you first join to land somewhere far from spawn and find untouched terrain. It's the best way to get a fresh start away from busy areas.</div>
+        <div class="warn"><strong>Cooldown:</strong> <code>/rtp</code> has a cooldown between uses. Plan your teleports wisely!</div>
+      </div>
+
+      <!-- SILK SPAWNERS -->
+      <div id="sec-silkspawners" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">Silk Spawners</div>
+          <p class="section-desc">Silk Spawners lets you pick up mob spawners with a Silk Touch enchanted pickaxe and place them elsewhere. Build your own mob farms wherever you want!</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">📦</span> How to Pick Up a Spawner</div>
+          <p>Equip a pickaxe with the <strong>Silk Touch</strong> enchantment. Mine any mob spawner and it will drop as an item rather than breaking. You can then carry it and place it wherever you like.</p>
+        </div>
+        <div class="tip"><strong>Tip:</strong> Spawners are valuable! Consider using them in a custom mob farm in your town to earn <strong>Money From Mobs</strong> passively and level up mcMMO combat skills at the same time.</div>
+        <div class="warn"><strong>Note:</strong> You need a Silk Touch pickaxe — a regular pickaxe or non-enchanted tool will destroy the spawner. Always double-check before mining one!</div>
+      </div>
+
+      <!-- ROSE STACKER -->
+      <div id="sec-rosestacker" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">Rose Stacker</div>
+          <p class="section-desc">Rose Stacker improves server performance and your experience by stacking nearby mobs, items, and spawners into single entities. Instead of 50 individual zombies lagging the server, you see one "x50 Zombie" stack.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🌿</span> What Gets Stacked</div>
+          <p>Mobs of the same type that are near each other are merged into a single stacked entity with a count above their head. Items on the ground are also stacked. When you kill a stacked mob or pick up a stacked item, you get loot for the whole stack.</p>
+        </div>
+        <div class="tip"><strong>AoE abilities help:</strong> mcMMO abilities like Skull Splitter (Axes) and Serrated Strikes (Swords) that hit multiple targets are especially powerful against stacked mobs.</div>
+        <div class="card">
+          <div class="card-title"><span class="icon">📦</span> Stacked Spawners</div>
+          <p>Spawners of the same type placed next to each other may stack, allowing a single spawner block to act as multiple spawners — great for compact, high-output mob farms.</p>
+        </div>
+      </div>
+
+      <!-- SKOICE -->
+      <div id="sec-skoice" class="wiki-section">
+        <div class="section-hero">
+          <div class="section-eyebrow">Quality of Life</div>
+          <div class="section-title">Skoice – Proximity Voice Chat</div>
+          <p class="section-desc">Skoice connects Minecraft to Discord for in-game proximity voice chat. Players nearby hear you in-game through Discord — and the further away they are, the quieter you sound.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="icon">🎙️</span> How to Set Up</div>
+          <p>Skoice requires linking your Minecraft account to a Discord account via our server's Discord bot. Once linked, join the designated Skoice voice channel in Discord and you'll hear players around you automatically based on in-game proximity.</p>
+        </div>
+        <h2 class="sub">Commands</h2>
+        <table class="cmd-table">
+          <tr><th>Command</th><th>Description</th></tr>
+          <tr><td><code>/skoice link</code></td><td>Get a code to link your Minecraft account to Discord.</td></tr>
+          <tr><td><code>/skoice settings</code></td><td>Adjust your personal voice chat settings in-game.</td></tr>
+          <tr><td><code>/skoice unlink</code></td><td>Unlink your Minecraft account from Discord.</td></tr>
+        </table>
+        <div class="tip"><strong>Tip:</strong> You don't have to talk to benefit from Skoice — you can listen to nearby players even if you're muted in Discord. Great for trading or coordinating in towns without typing.</div>
+        <div class="warn"><strong>Requirement:</strong> You must be in the correct Discord voice channel for Skoice to work. Check with server staff or the Discord for the right channel to join.</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ── Sky canvas animation ──
+(function () {
+  const canvas = document.getElementById('sky-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [], clouds = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // Stars
+  for (let i = 0; i < 120; i++) {
+    stars.push({
+      x: Math.random(),
+      y: Math.random() * 0.6,
+      r: Math.random() * 1.2 + 0.3,
+      a: Math.random(),
+      speed: Math.random() * 0.006 + 0.002
+    });
+  }
+
+  // Clouds
+  const cloudColors = ['rgba(168,216,234,0.06)', 'rgba(200,232,244,0.05)', 'rgba(240,244,255,0.04)'];
+  for (let i = 0; i < 6; i++) {
+    clouds.push({
+      x: Math.random(),
+      y: 0.1 + Math.random() * 0.5,
+      w: 0.15 + Math.random() * 0.25,
+      h: 0.04 + Math.random() * 0.08,
+      speed: 0.00003 + Math.random() * 0.00004,
+      color: cloudColors[Math.floor(Math.random() * cloudColors.length)]
+    });
+  }
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Gradient sky
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#0d1022');
+    grad.addColorStop(0.5, '#151929');
+    grad.addColorStop(1, '#1e2440');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle sunset glow on horizon
+    const horizGrad = ctx.createRadialGradient(W * 0.5, H * 0.75, 0, W * 0.5, H * 0.75, W * 0.6);
+    horizGrad.addColorStop(0, 'rgba(244,132,95,0.04)');
+    horizGrad.addColorStop(0.5, 'rgba(240,180,41,0.02)');
+    horizGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = horizGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Stars
+    stars.forEach(s => {
+      s.a += s.speed;
+      const alpha = 0.3 + 0.4 * Math.abs(Math.sin(s.a));
+      ctx.beginPath();
+      ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,220,255,${alpha})`;
+      ctx.fill();
+    });
+
+    // Clouds
+    clouds.forEach(c => {
+      c.x = (c.x + c.speed) % 1.3;
+      ctx.beginPath();
+      ctx.ellipse(c.x * W, c.y * H, c.w * W, c.h * H, 0, 0, Math.PI * 2);
+      ctx.fillStyle = c.color;
+      ctx.fill();
+    });
+
+    t++;
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── Navigation ──
+function showSection(id) {
+  document.querySelectorAll('.wiki-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+
+  const sec = document.getElementById('sec-' + id);
+  if (sec) sec.classList.add('active');
+
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + id + "'")) {
+      l.classList.add('active');
+      // Ensure parent nav-section is open
+      const ns = l.closest('.nav-section');
+      if (ns && !ns.classList.contains('open')) ns.classList.add('open');
+    }
+  });
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleNav(header) {
+  header.parentElement.classList.toggle('open');
+}
+
+// ── Search ──
+const searchData = [
+  { title: 'Home', section: 'home', ctx: 'Welcome to Ascended Kingdom' },
+  { title: 'Server Basics – Homes & Teleportation', section: 'basics', ctx: '/sethome, /home, /tpa, /spawn' },
+  { title: 'Server Basics – Money & Mobs', section: 'basics', ctx: '/balance, /pay, Money from Mobs' },
+  { title: 'Server Basics – Player Commands', section: 'basics', ctx: '/msg, /afk, /nick, /bp' },
+  { title: 'Towny – Overview', section: 'towny-overview', ctx: 'Towns, nations, land claiming' },
+  { title: 'Towny – Creating & Managing Towns', section: 'towny-towns', ctx: '/t new, /t claim, upkeep, residents' },
+  { title: 'Towny – Nations', section: 'towny-nations', ctx: '/n new, alliances, enemies, king' },
+  { title: 'Towny – Plots & Permissions', section: 'towny-plots', ctx: '/plot claim, /plot forsale, permissions' },
+  { title: 'mcMMO – Overview', section: 'mcmmo-overview', ctx: '/mcstats, /mctop, skill leveling' },
+  { title: 'mcMMO – Skills Reference', section: 'mcmmo-skills', ctx: 'Swords, Axes, Mining, Fishing, Herbalism...' },
+  { title: 'mcMMO – Parties', section: 'mcmmo-parties', ctx: '/party create, XP sharing, /pc chat' },
+  { title: 'Economy – Money & Basics', section: 'economy-basics', ctx: '/balance, /pay, earning money' },
+  { title: 'EzAuctions', section: 'ezauctions', ctx: '/auction start, /auction bid, real-time auctions' },
+  { title: 'EzShops', section: 'ezshops', ctx: 'Player shops, chest shops, /shop list' },
+  { title: 'Player Auctions – Auction House', section: 'playerauctions', ctx: '/ah, /ah sell, browse marketplace' },
+  { title: 'GravesX – Death Graves', section: 'gravesx', ctx: '/graves, item recovery on death' },
+  { title: 'Minepacks – Backpack', section: 'minepacks', ctx: '/bp, /backpack, extra inventory' },
+  { title: 'Better RTP – Random Teleport', section: 'betterrtp', ctx: '/rtp, explore new areas' },
+  { title: 'Silk Spawners', section: 'silkspawners', ctx: 'Pick up spawners with Silk Touch' },
+  { title: 'Rose Stacker', section: 'rosestacker', ctx: 'Mob stacking, item stacking, performance' },
+  { title: 'Skoice – Proximity Voice Chat', section: 'skoice', ctx: '/skoice link, Discord voice, proximity audio' },
+];
+
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+
+searchInput.addEventListener('input', function () {
+  const q = this.value.trim().toLowerCase();
+  if (!q) { searchResults.style.display = 'none'; return; }
+
+  const hits = searchData.filter(d =>
+    d.title.toLowerCase().includes(q) || d.ctx.toLowerCase().includes(q)
+  ).slice(0, 8);
+
+  if (hits.length === 0) {
+    searchResults.innerHTML = '<div class="sr-none">No results found</div>';
+  } else {
+    searchResults.innerHTML = hits.map(h =>
+      `<div class="sr-item" onclick="showSection('${h.section}');searchInput.value='';searchResults.style.display='none'">
+        <div class="sr-item-title">${h.title}</div>
+        <div class="sr-item-ctx">${h.ctx}</div>
+      </div>`
+    ).join('');
+  }
+  searchResults.style.display = 'block';
+});
+
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.search-wrap')) searchResults.style.display = 'none';
+});
+
+// ── Default open all nav sections ──
+document.querySelectorAll('.nav-section').forEach(ns => ns.classList.add('open'));
+</script>
+</body>
+</html>
